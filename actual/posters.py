@@ -14,7 +14,7 @@ def posters():
     if request.method == 'DELETE':
         requested_id = request.args.get('id')
         user_privelage = session.get('user_privelage')
-        if user_privelage == 0: return error('Unauthorized.')
+        if not user_privelage or user_privelage == 0: return error('Unauthorized.')
         if requested_id == None: return error('Id not specified.')
 
         db = get_db()
@@ -28,6 +28,7 @@ def posters():
     if request.method == 'GET':
         requested_id = request.args.get('id')
         requested_status = request.args.get('status')
+        user_privelage = 0
         user_privelage = session.get('user_privelage')
         db = get_db()
 
@@ -57,7 +58,7 @@ def posters():
 
     if request.method == 'POST':
         user_privelage = session.get('user_privelage')
-        if user_privelage == 0: return error('Unauthorized.')
+        if not user_privelage or user_privelage == 0: return error('Unauthorized.')
         json = request.get_json()
         db = get_db()
 
