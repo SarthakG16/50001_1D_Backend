@@ -62,7 +62,7 @@ def login():
             'SELECT * FROM user WHERE username = ?', (username,)
         ).fetchone()
 
-        if !user: return error('Invalid username or password.')
+        if not user: return error('Invalid username or password.')
         if not check_password_hash(user['password'], password):
             return error('Invalid username or password.')
         if privelage > user['privelage']:
