@@ -18,11 +18,11 @@ def register():
         privelage = 0
         error = None
 
-        if 'username' not in json or json['username'] == '': return error('Username is required.')
-        if 'password' not in json or json['password'] == '': return error('Password is required.')
+        if 'username' not in json or json['username'] == '': return send_error('Username is required.')
+        if 'password' not in json or json['password'] == '': return send_error('Password is required.')
         if 'privelage' in json :
             if json['privelage'] == 'administrator': privelage = 1
-            else: return error('Unauthorized.')
+            else: return send_error('Unauthorized.')
 
         username = json['username']
         password = json['password']
@@ -30,14 +30,14 @@ def register():
         if db.execute(
             'SELECT id FROM user WHERE username = ?', (username,)
         ).fetchone() is not None:
-            return error('Username already exists.')
+            return send_error('Username already exists.')
 
         db.execute(
             'INSERT INTO user (username, password, privelage) VALUES (?, ?, ?)',
             (username, generate_password_hash(password), privelage)
         )
         db.commit()
-        return success()
+        return send_success()
 
     return ""
 
@@ -49,11 +49,11 @@ def login():
         db = get_db()
         error = None
 
-        if 'username' not in json or json['username'] == '': return error('Username is required.')
-        if 'password' not in json or json['password'] == '': return error('Username is required.')
+        if 'username' not in json or json['username'] == '': return send_error('Username is required.')
+        if 'password' not in json or json['password'] == '': return send_error('Username is required.')
         if 'requested_privelage' in json:
             if json['requested_privelage'] == 'administrator': privelage = 1
-            else: return error('Unauthorized.')
+            else: return send_error('Unauthorized.')
 
         username = json['username']
         password = json['password']
@@ -62,11 +62,11 @@ def login():
             'SELECT * FROM user WHERE username = ?', (username,)
         ).fetchone()
 
-        if not user: return error('Invalid username or password.')
+        if not user: return send_error('Invalid username or password.')
         if not check_password_hash(user['password'], password):
-            return error('Invalid username or password.')
+            return send_error('Invalid username or password.')
         if privelage > user['privelage']:
-            return error('Unauthorized')
+            return send_error('Unauthorized')
 
         session.clear()
         session['user_id'] = user['id']
@@ -78,7 +78,7 @@ def login():
 @bp.route('/logout')
 def logout():
     session.clear()
-    return success()
+    return send_success()
 
 
 @bp.before_app_request
@@ -103,9 +103,9 @@ def login_required(view):
 
     return wrapped_view
 
-def error(text):
+def send_error(text):
     return jsonify(status = 'failure', error_message = text)
 
-def success(text = None):
+def send_success(text = None):
     if text: return jsonify(status = 'success')
     return jsonify(status = 'success', description = text)
