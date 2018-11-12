@@ -55,7 +55,7 @@ def login():
             if json['requested_privelage'] == 'administrator': privelage = 1
             elif json['requested_privelage'] == 'user': privelage = 0
 
-        if privelage = -1: return send_error('Invalid privelage requested.')
+        if privelage == -1: return send_error('Invalid privelage requested.')
 
         username = json['username']
         password = json['password']
