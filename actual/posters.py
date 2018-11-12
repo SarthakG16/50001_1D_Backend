@@ -82,7 +82,7 @@ def posters():
             except sqlite3.OperationalError as e:
                 print(e)
                 return error('Invalid parameter. {}'.format(e))
-            except as e:
+            except Exception as e:
                 print(e)
                 return error('Error in updating the databse. {}'.format(e))
 
