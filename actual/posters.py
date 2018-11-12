@@ -18,8 +18,8 @@ def posters():
         if requested_id == None: return error('Id not specified.')
 
         db = get_db()
-        info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
-        if info is None: return error('Id not found.')
+        #info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
+        #if info is None: return error('Id not found.')
 
         db.execute('DELETE FROM poster WHERE id = ?', (requested_id,))
         db.commit()
@@ -98,6 +98,9 @@ def posters():
 
             ls = []
             for key in json:
+                if key.startswith('date'):
+                    if len(json[key].split(' ')) == 1:
+                        return error('Invalid date format for {}'.format(key))
                 ls.append('{} = "{}"'.format(key, json[key]))
             try:
                 db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE id = ' + str(id))
