@@ -79,10 +79,12 @@ def posters():
                 ls.append('{} = "{}"'.format(key, json[key]))
             try:
                 db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = ' + str(title))
-            except sqlite3.OperationalError:
-                return error('Invalid parameter.')
-            except:
-                return error('Error in updating the databse.')
+            except sqlite3.OperationalError as e:
+                print(e)
+                return error('Invalid parameter. {}'.format(e))
+            except as e:
+                print(e)
+                return error('Error in updating the databse. {}'.format(e))
 
             db.commit()
             return success()
