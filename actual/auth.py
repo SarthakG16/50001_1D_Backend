@@ -45,7 +45,7 @@ def register():
 def login():
     if request.method == 'POST':
         json = request.get_json()
-        privelage = 0
+        privelage = -1
         db = get_db()
         error = None
 
@@ -53,7 +53,9 @@ def login():
         if 'password' not in json or json['password'] == '': return send_error('Username is required.')
         if 'requested_privelage' in json:
             if json['requested_privelage'] == 'administrator': privelage = 1
-            else: return send_error('Unauthorized.')
+            elif json['requested_privelage'] == 'user': privelage = 0
+
+        if privelage = -1: return send_error('Invalid privelage requested.')
 
         username = json['username']
         password = json['password']
