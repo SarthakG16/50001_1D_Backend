@@ -62,7 +62,7 @@ def login():
             'SELECT * FROM user WHERE username = ?', (username,)
         ).fetchone()
 
-        if user is None: return error('Invalid username or password.')
+        if !user: return error('Invalid username or password.')
         if not check_password_hash(user['password'], password):
             return error('Invalid username or password.')
         if privelage > user['privelage']:
@@ -71,7 +71,7 @@ def login():
         session.clear()
         session['user_id'] = user['id']
         session['user_privelage'] = user['privelage']
-        return success()
+        return jsonify(status = 'success', privelage = user['privelage'])
 
     return ""
 
@@ -106,5 +106,6 @@ def login_required(view):
 def error(text):
     return jsonify(status = 'failure', error_message = text)
 
-def success():
-    return jsonify(status = 'success')
+def success(text = None):
+    if text: return jsonify(status = 'success')
+    return jsonify(status = 'success', description = text)
