@@ -32,9 +32,13 @@ def posters():
         db = get_db()
 
         if requested_id:
-            info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
-            if info is None: return error('Requested id not found.')
-            return jsonify(buildRowDictNonNull(info, user_privelage))
+            try:
+                info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
+                if info is None: return error('Requested id not found.')
+                return jsonify(buildRowDictNonNull(info, user_privelage))
+            except Exception as e:
+                print(e)
+                return error(str(e))
 
         if requested_status:
             if user_privelage == 0: return jsonify([])
@@ -74,11 +78,18 @@ def posters():
             )
 
             json.pop('title')
+            if len(json) == 0:
+                db.commit()
+                return success()
+
             ls = []
+            print(json)
             for key in json:
-                ls.append('{} = "{}"'.format(key, json[key]))
+                value = '"{}"'.format(json[key]) if json[key] else 'NULL'
+                ls.append('{} = {}'.format(key, value))
+            print('command', 'UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = "' + str(title) + '"')
             try:
-                db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = ' + str(title))
+                db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = "' + str(title) + '"')
             except sqlite3.OperationalError as e:
                 print(e)
                 return error('Invalid parameter. {}'.format(e))
@@ -101,7 +112,7 @@ def posters():
             ls = []
             for key in json:
                 if key.startswith('date'):
-                    if len(json[key].split(' ')) == 1:
+                    if json[key] and len(json[key].split(' ')) == 1:
                         return error('Invalid date format for {}'.format(key))
                 ls.append('{} = "{}"'.format(key, json[key]))
             try:
@@ -138,6 +149,7 @@ def success():
     return jsonify(status = 'success')
 
 def buildRowDict(row):
+    print(row)
     d = {}
     d['id'] = row[0]
     d['title'] = row[1]
