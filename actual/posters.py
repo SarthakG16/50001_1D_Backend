@@ -59,7 +59,7 @@ def posters():
 
         if 'id' not in json:
             if 'title' not in json or json['title'] == "":
-                return error('Missing title. Posters must have a title.')
+                return error('Missing title. New posters must have a title.')
 
             title = json['title']
 
@@ -72,6 +72,18 @@ def posters():
                 'INSERT INTO poster (title, status) VALUES (?, ?)',
                 (title, 'pending')
             )
+
+            json.pop('title')
+            ls = []
+            for key in json:
+                ls.append('{} = "{}"'.format(key, json[key]))
+            try:
+                db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = ' + str(title))
+            except sqlite3.OperationalError:
+                return error('Invalid parameter.')
+            except:
+                return error('Error in updating the databse.')
+
             db.commit()
             return success()
 
