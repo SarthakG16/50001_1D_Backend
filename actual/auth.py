@@ -109,5 +109,5 @@ def send_error(text):
     return jsonify(status = 'failure', error_message = text)
 
 def send_success(text = None):
-    if text: return jsonify(status = 'success')
+    if not text: return jsonify(status = 'success')
     return jsonify(status = 'success', description = text)
