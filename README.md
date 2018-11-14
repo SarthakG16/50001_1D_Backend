@@ -1,4 +1,23 @@
-# Registering, Logging In, Logging Out
+# Using the Server
+
+Creating a database:
+```bash
+. venv/bin/activate
+flask init-db
+```
+Running the server using waitress:
+```bash
+pip install waitress
+waitress-serve --call 'actual:create_app'
+```
+
+# Using the API
+
+Currently, the server is residing in `http://fishy.asuscomm.com:5000`, so for the commands below, add it to the end of this URL.
+
+For example, for retrieving all poster data, use `http://fishy.asuscomm.com:5000/posters/`.
+
+## Registering, Logging In, Logging Out
 
 ### POST /auth/register
 
@@ -42,7 +61,7 @@ Example output JSON:
 }
 ```
 
-# Posters
+## Posters
 
 ### GET /posters/
 
