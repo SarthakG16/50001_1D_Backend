@@ -89,7 +89,7 @@ def posters():
                 if key.startswith('date'):
                     if ' ' not in json[key]: return error('Invalid date format')
                     s = json[key].split(' ')
-                    if len(s[0].split('-') != 3 or len(s[1].split(':')) != 3:
+                    if len(s[0].split('-')) != 3 or len(s[1].split(':')) != 3:
                          return error('Invalid date format')
 
                 value = '"{}"'.format(json[key]) if json[key] else 'NULL'
