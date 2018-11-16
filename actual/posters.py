@@ -86,6 +86,12 @@ def posters():
             ls = []
             print(json)
             for key in json:
+                if key.startswith('date'):
+                    if ' ' not in json[key]: return error('Invalid date format')
+                    s = json[key].split(' ')
+                    if len(s[0].split('-') != 3 or len(s[1].split(':')) != 3:
+                         return error('Invalid date format')
+
                 value = '"{}"'.format(json[key]) if json[key] else 'NULL'
                 ls.append('{} = {}'.format(key, value))
             print('command', 'UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = "' + str(title) + '"')
