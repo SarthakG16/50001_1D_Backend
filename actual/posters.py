@@ -14,20 +14,25 @@ def posters():
     if request.method == 'DELETE':
         requested_id = request.args.get('id')
         user_privelage = session.get('user_privelage')
-        if not user_privelage or user_privelage == 0: return error('Unauthorized.')
-        if requested_id == None: return error('Id not specified.')
+        if not user_privelage or user_privelage == 0: return send_error('Unauthorized.')
+        if requested_id == None: return send_error('Id not specified.')
 
         db = get_db()
         #info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
-        #if info is None: return error('Id not found.')
+        #if info is None: return send_error('Id not found.')
 
         db.execute('DELETE FROM poster WHERE id = ?', (requested_id,))
         db.commit()
-        return success()
+        return send_success()
 
     if request.method == 'GET':
         requested_id = request.args.get('id')
         requested_status = request.args.get('status')
+
+        ignore_image = 0
+        if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
+            ignore_image = 1
+
         user_privelage = 0
         user_privelage = session.get('user_privelage')
         db = get_db()
@@ -35,43 +40,43 @@ def posters():
         if requested_id:
             try:
                 info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
-                if info is None: return error('Requested id not found.')
-                return jsonify(buildRowDictNonNull(info, user_privelage))
+                if info is None: return send_error('Requested id not found.')
+                return jsonify(buildRowDictNonNull(info, user_privelage, ignore_image))
             except Exception as e:
                 print(e)
-                return error(str(e))
+                return send_error(str(e))
 
         if requested_status:
             if user_privelage == 0: return jsonify([])
             info = db.execute('SELECT * FROM poster WHERE status = ?', (requested_status,)).fetchall()
-            if info is None: return error('No posters matching the requested status.')
-            ls = [buildRowDictNonNull(i, user_privelage) for i in info]
+            if info is None: return send_error('No posters matching the requested status.')
+            ls = [buildRowDictNonNull(i, user_privelage, ignore_image) for i in info]
             return jsonify(ls)
 
         if user_privelage == 1: info = db.execute('SELECT * FROM poster').fetchall()
         else: info = db.execute('SELECT * FROM poster WHERE status="posted"').fetchall()
 
-        ls = [buildRowDictNonNull(i, user_privelage) for i in info]
+        ls = [buildRowDictNonNull(i, user_privelage, ignore_image) for i in info]
         print(ls)
         print(jsonify(ls))
         return jsonify(ls)
 
     if request.method == 'POST':
         user_privelage = session.get('user_privelage')
-        if not user_privelage or user_privelage == 0: return error('Unauthorized.')
+        if not user_privelage or user_privelage == 0: return send_error('Unauthorized.')
         json = request.get_json()
         db = get_db()
 
         if 'id' not in json:
             if 'title' not in json or json['title'] == "":
-                return error('Missing title. New posters must have a title.')
+                return send_error('Missing title. New posters must have a title.')
 
             title = json['title']
 
             if db.execute(
                 'SELECT id FROM poster WHERE title = ?', (title,)
             ).fetchone() is not None:
-                return error('Poster already exists with given title.')
+                return send_error('Poster already exists with given title.')
 
             db.execute(
                 'INSERT INTO poster (title, status) VALUES (?, ?)',
@@ -81,16 +86,16 @@ def posters():
             json.pop('title')
             if len(json) == 0:
                 db.commit()
-                return success()
+                return send_success()
 
             ls = []
             print(json)
             for key in json:
-                if key.startswith('date'):
-                    if ' ' not in json[key]: return error('Invalid date format')
+                if key.startswith('date') and json[key]:
+                    if ' ' not in json[key]: return send_error('Invalid date format')
                     s = json[key].split(' ')
                     if len(s[0].split('-')) != 3 or len(s[1].split(':')) != 3:
-                         return error('Invalid date format')
+                         return send_error('Invalid date format')
 
                 value = '"{}"'.format(json[key]) if json[key] else 'NULL'
                 ls.append('{} = {}'.format(key, value))
@@ -99,39 +104,39 @@ def posters():
                 db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = "' + str(title) + '"')
             except sqlite3.OperationalError as e:
                 print(e)
-                return error('Invalid parameter. {}'.format(e))
+                return send_error('Invalid parameter. {}'.format(e))
             except Exception as e:
                 print(e)
-                return error('Error in updating the databse. {}'.format(e))
+                return send_error('Error in updating the databse. {}'.format(e))
 
             db.commit()
-            return success()
+            return send_success()
 
         else:
             id = json['id']
-            if id == '': return error('Missing Id in request.')
+            if id == '': return send_error('Missing Id in request.')
             json.pop('id')
 
             info = db.execute('SELECT * FROM poster WHERE id = ?', (id,)).fetchone()
             if info is None:
-                return error('Id not found.')
+                return send_error('Id not found.')
 
             ls = []
             for key in json:
                 if key.startswith('date'):
                     if json[key] and len(json[key].split(' ')) == 1:
-                        return error('Invalid date format for {}'.format(key))
+                        return send_error('Invalid date format for {}'.format(key))
                 ls.append('{} = "{}"'.format(key, json[key]))
             try:
                 db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE id = ' + str(id))
             except sqlite3.OperationalError:
-                return error('Invalid parameter.')
+                return send_error('Invalid parameter.')
             except:
-                return error('Error in updating the databse.')
+                return send_error('Error in updating the databse.')
 
             db.commit()
 
-            return success()
+            return send_success()
 
 
 
@@ -149,10 +154,10 @@ def load_logged_in_user():
             'SELECT * FROM user WHERE id = ?', (user_id,)
         ).fetchone()
 
-def error(text):
+def send_error(text):
     return jsonify(status = 'failure', error_message = text)
 
-def success():
+def send_success():
     return jsonify(status = 'success')
 
 def buildRowDict(row):
@@ -176,11 +181,13 @@ def buildRowDict(row):
 
     return d
 
-def buildRowDictNonNull(row, privelage = 0):
+def buildRowDictNonNull(row, privelage = 0, ignore_image = 0):
     d = buildRowDict(row)
     if privelage == 0:
         d['date_submitted'] = None
         d['date_approved'] = None
         d['date_posted'] = None
         d['date_expiry'] = None
+    if ignore_image == 1:
+        d['serialized_image_data'] = None
     return {k:d[k] for k in d if d[k] and d[k] != 'None'}

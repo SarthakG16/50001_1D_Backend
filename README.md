@@ -118,6 +118,16 @@ When logged in as an administrator, the GET /posters/ function returns a JSON li
   }
 ]
 ```
+This command has a few optional parameters to refine the query performed on the server.
+
+- `/posters/?id=2` A poster of a specific id can be requested using this parameter.
+
+
+- `/posters/?status=pending` Posters with a specific status can be requested using this parameter.
+
+- `/posters/?ignore_image=1` - Since the serialized image data can be quite large, this parameter returns results without the image data when set to 1.
+
+
 
 ### POST /posters/
 When an 'id' key is not given in the JSON request, a new poster is created, and information stored in that new poster. When creating a new poster, **the 'title' field is compulsory**.
