@@ -1,4 +1,4 @@
-# Using the Server
+# Using the Server (Mac / Linux)
 
 Creating a database:
 ```bash
