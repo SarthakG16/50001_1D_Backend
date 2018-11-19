@@ -11,7 +11,26 @@ pip install waitress
 waitress-serve --call 'actual:create_app'
 ```
 
-# Using the API
+# Using the API (NodeJS)
+
+First, run the following command to install the 'request' module.
+```
+npm install request
+```
+
+```javascript
+// Place this at the top of the script.
+const request = require('request');
+
+// The resulting array of dictionaries are stored in 'body'.
+request("http://fishy.asuscomm.com:5000/posters/", { json: true }, (err, res, body) => {
+  if (err) { return console.log(err); }
+  console.log(body)
+});
+
+```
+
+# Using the API (General)
 
 Currently, the server is residing in `http://fishy.asuscomm.com:5000`, so for the commands below, add it to the end of this URL.
 
