@@ -19,7 +19,7 @@ def create_app(test_config = None):
     except OSError:
         pass
 
-    @app.route('/current')
+    @app.route('/debug_current_user')
     def current():
         d = {}
         d['user_id'] = session.get('user_id')
