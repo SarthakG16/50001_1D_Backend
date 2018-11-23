@@ -169,7 +169,7 @@ def debug():
 
     db = get_db()
     info = db.execute('SELECT * FROM poster').fetchall()
-    posters = [buildRowDictNonNull(i, 1, ignore_image) for i in info]
+    posters = [buildRowDictNonNull(i, 1, ignore_image, 1) for i in info]
 
     if len(posters) == 0: return 'No posters.'
     return jsonify(posters)
@@ -192,11 +192,12 @@ def send_error(text):
 def send_success():
     return jsonify(status = 'success')
 
-def buildRowDict(row):
+def buildRowDict(row, force_uploader = 0):
     print(row)
     d = {}
     d['id'] = row[0]
-    # d['uploader_id'] = row[1]
+    if force_uploader == 1:
+        d['uploader_id'] = row[1]
     d['title'] = row[2]
     d['status'] = row[3]
     d['serialized_image_data'] = row[4]
@@ -215,8 +216,8 @@ def buildRowDict(row):
 
     return d
 
-def buildRowDictNonNull(row, privilege = -1, ignore_image = 0):
-    d = buildRowDict(row)
+def buildRowDictNonNull(row, privilege = -1, ignore_image = 0, force_uploader = 0):
+    d = buildRowDict(row, force_uploader)
     if privilege == -1:
         d['date_submitted'] = None
         d['date_approved'] = None
