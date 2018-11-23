@@ -9,7 +9,7 @@ from actual.db import get_db
 
 bp = Blueprint('posters', __name__, url_prefix='/posters')
 
-@bp.route('/mine', methods=['GET'])
+@bp.route('/mine', methods=['GET', 'POST'])
 def my_posters():
     if request.method == 'GET':
         user_id = session.get('user_id')
