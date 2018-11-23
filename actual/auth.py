@@ -13,15 +13,15 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 def register():
     if request.method == 'POST':
         json = request.get_json()
-        # requested_privelage = request.get_json()['requested_privelage']
+        # requested_privilege = request.get_json()['requested_privilege']
         db = get_db()
-        privelage = 0
+        privilege = 0
         error = None
 
         if 'username' not in json or json['username'] == '': return send_error('Username is required.')
         if 'password' not in json or json['password'] == '': return send_error('Password is required.')
-        if 'privelage' in json :
-            if json['privelage'] == 'administrator': privelage = 1
+        if 'privilege' in json :
+            if json['privilege'] == 'administrator': privilege = 1
             else: return send_error('Unauthorized.')
 
         username = json['username']
@@ -33,8 +33,8 @@ def register():
             return send_error('Username already exists.')
 
         db.execute(
-            'INSERT INTO user (username, password, privelage) VALUES (?, ?, ?)',
-            (username, generate_password_hash(password), privelage)
+            'INSERT INTO user (username, password, privilege) VALUES (?, ?, ?)',
+            (username, generate_password_hash(password), privilege)
         )
         db.commit()
         return send_success()
@@ -45,17 +45,17 @@ def register():
 def login():
     if request.method == 'POST':
         json = request.get_json()
-        privelage = -1
+        privilege = -1
         db = get_db()
         error = None
 
         if 'username' not in json or json['username'] == '': return send_error('Username is required.')
         if 'password' not in json or json['password'] == '': return send_error('Username is required.')
-        if 'requested_privelage' in json:
-            if json['requested_privelage'] == 'administrator': privelage = 1
-            elif json['requested_privelage'] == 'user': privelage = 0
+        if 'requested_privilege' in json:
+            if json['requested_privilege'] == 'administrator': privilege = 1
+            elif json['requested_privilege'] == 'user': privilege = 0
 
-        if privelage == -1: return send_error('Invalid privelage requested.')
+        if privilege == -1: return send_error('Invalid privilege requested.')
 
         username = json['username']
         password = json['password']
@@ -67,13 +67,13 @@ def login():
         if not user: return send_error('Invalid username or password.')
         if not check_password_hash(user['password'], password):
             return send_error('Invalid username or password.')
-        if privelage > user['privelage']:
+        if privilege > user['privilege']:
             return send_error('Unauthorized')
 
         session.clear()
         session['user_id'] = user['id']
-        session['user_privelage'] = user['privelage']
-        return jsonify(status = 'success', privelage = user['privelage'])
+        session['user_privilege'] = user['privilege']
+        return jsonify(status = 'success', privilege = user['privilege'])
 
     return ""
 
@@ -86,7 +86,7 @@ def logout():
 @bp.before_app_request
 def load_logged_in_user():
     user_id = session.get('user_id')
-    user_privelage = session.get('user_privelage')
+    user_privilege = session.get('user_privilege')
     if user_id is None:
         g.user = None
     else:

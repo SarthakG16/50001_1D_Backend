@@ -62,7 +62,7 @@ Example input JSON:
 {
 	"username" : "admin10",
 	"password" : "password1",
-	"privelage" : "administrator"
+	"privilege" : "administrator"
 }
 ```
 Example output JSON:
@@ -79,13 +79,13 @@ Example input JSON:
 {
 	"username" : "user1",
 	"password" : "hahaha",
-	"requested_privelage" : "user"
+	"requested_privilege" : "user"
 }
 ```
 Example output JSON:
 ```json
 {
-    "privelage": 0,
+    "privilege": 0,
     "status": "success"
 }
 ```
@@ -217,7 +217,7 @@ This function returns the current user id, and their privilege.
 
 ```json
 {
-  "privelage": null,
+  "privilege": null,
   "user_id": null
 }
 ```

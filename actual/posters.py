@@ -30,8 +30,8 @@ def my_posters():
 def posters():
     if request.method == 'DELETE':
         requested_id = request.args.get('id')
-        user_privelage = session.get('user_privelage')
-        if not user_privelage or user_privelage == 0: return send_error('Unauthorized.')
+        user_privilege = session.get('user_privilege')
+        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
         if requested_id == None: return send_error('Id not specified.')
 
         db = get_db()
@@ -50,38 +50,38 @@ def posters():
         if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
             ignore_image = 1
 
-        user_privelage = 0
-        user_privelage = session.get('user_privelage')
+        user_privilege = 0
+        user_privilege = session.get('user_privilege')
         db = get_db()
 
         if requested_id:
             try:
                 info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
                 if info is None: return send_error('Requested id not found.')
-                return jsonify(buildRowDictNonNull(info, user_privelage, ignore_image))
+                return jsonify(buildRowDictNonNull(info, user_privilege, ignore_image))
             except Exception as e:
                 print(e)
                 return send_error(str(e))
 
         if requested_status:
-            if user_privelage == 0: return jsonify([])
+            if user_privilege == 0: return jsonify([])
             info = db.execute('SELECT * FROM poster WHERE status = ?', (requested_status,)).fetchall()
             if info is None: return send_error('No posters matching the requested status.')
-            ls = [buildRowDictNonNull(i, user_privelage, ignore_image) for i in info]
+            ls = [buildRowDictNonNull(i, user_privilege, ignore_image) for i in info]
             return jsonify(ls)
 
-        if user_privelage == 1: info = db.execute('SELECT * FROM poster').fetchall()
+        if user_privilege == 1: info = db.execute('SELECT * FROM poster').fetchall()
         else: info = db.execute('SELECT * FROM poster WHERE status="posted"').fetchall()
 
-        ls = [buildRowDictNonNull(i, user_privelage, ignore_image) for i in info]
+        ls = [buildRowDictNonNull(i, user_privilege, ignore_image) for i in info]
         print(ls)
         print(jsonify(ls))
         return jsonify(ls)
 
     if request.method == 'POST':
-        user_privelage = session.get('user_privelage')
+        user_privilege = session.get('user_privilege')
         user_id = session.get('user_id')
-        if not user_privelage or user_privelage == 0: return send_error('Unauthorized.')
+        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
         json = request.get_json()
         db = get_db()
 
@@ -165,7 +165,7 @@ def posters():
 @bp.before_app_request
 def load_logged_in_user():
     user_id = session.get('user_id')
-    user_privelage = session.get('user_privelage')
+    user_privilege = session.get('user_privilege')
     if user_id is None:
         g.user = None
     else:
@@ -202,9 +202,9 @@ def buildRowDict(row):
 
     return d
 
-def buildRowDictNonNull(row, privelage = -1, ignore_image = 0):
+def buildRowDictNonNull(row, privilege = -1, ignore_image = 0):
     d = buildRowDict(row)
-    if privelage == -1:
+    if privilege == -1:
         d['date_submitted'] = None
         d['date_approved'] = None
         d['date_posted'] = None

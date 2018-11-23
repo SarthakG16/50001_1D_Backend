@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS poster;
 --   id INTEGER PRIMARY KEY AUTOINCREMENT,
 --   username TEXT UNIQUE NOT NULL,
 --   password TEXT NOT NULL,
---   privelage INTEGER
+--   privilege INTEGER
 -- );
 
 CREATE TABLE poster (
