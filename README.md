@@ -23,10 +23,27 @@ npm install request
 const request = require('request');
 
 // The resulting array of dictionaries are stored in 'body'.
+const request = require('request');
+const fs = require('fs');
+
 request("http://fishy.asuscomm.com:5000/posters/", { json: true }, (err, res, body) => {
   if (err) { return console.log(err); }
-  console.log(body)
+
+  for (let i = 0; i < body.length; i++) {
+    // Pull out the serialized image data, and filename.
+    serialized_image_data = body[i].serialized_image_data;
+    fileName = `out${i}.pdf`;
+
+    // Write the serialized data to a pdf file.
+    console.log(`Writing to ${fileName}`);
+    fs.writeFile(fileName, serialized_image_data, 'base64', (err) => {
+      if (err) console.log(err)
+    });
+
+  }
+
 });
+
 
 ```
 
@@ -146,7 +163,8 @@ This command has a few optional parameters to refine the query performed on the 
 
 - `/posters/?ignore_image=1` - Since the serialized image data can be quite large, this parameter returns results without the image data when set to 1.
 
-
+### GET /posters/mine
+When logged in as a user (or administrator), this command returns the poster details of the posters uploaded by the current user.
 
 ### POST /posters/
 When an 'id' key is not given in the JSON request, a new poster is created, and information stored in that new poster. When creating a new poster, **the 'title' field is compulsory**.

@@ -9,6 +9,23 @@ from actual.db import get_db
 
 bp = Blueprint('posters', __name__, url_prefix='/posters')
 
+@bp.route('/mine', methods=['GET'])
+def my_posters():
+    if request.method == 'GET':
+        user_id = session.get('user_id')
+        if not user_id: return send_error('Not logged in.')
+        ignore_image = 0
+        if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
+            ignore_image = 1
+        try:
+            db = get_db()
+            info = db.execute('SELECT * FROM poster WHERE uploader_id = ?', (user_id,)).fetchall()
+            if info is None: return send_error('Requested id not found.')
+            return jsonify([buildRowDictNonNull(i, 1, ignore_image) for i in info])
+        except Exception as e:
+            print(e)
+            return send_error(str(e))
+
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
 def posters():
     if request.method == 'DELETE':
@@ -63,6 +80,7 @@ def posters():
 
     if request.method == 'POST':
         user_privelage = session.get('user_privelage')
+        user_id = session.get('user_id')
         if not user_privelage or user_privelage == 0: return send_error('Unauthorized.')
         json = request.get_json()
         db = get_db()
@@ -72,6 +90,7 @@ def posters():
                 return send_error('Missing title. New posters must have a title.')
 
             title = json['title']
+            json['uploader_id'] = user_id
 
             if db.execute(
                 'SELECT id FROM poster WHERE title = ?', (title,)
@@ -164,26 +183,28 @@ def buildRowDict(row):
     print(row)
     d = {}
     d['id'] = row[0]
-    d['title'] = row[1]
-    d['status'] = row[2]
-    d['serialized_image_data'] = row[3]
-    d['description'] = row[4]
-    d['link'] = row[5]
-    d['category'] = row[6]
-    d['locations'] = row[7]
-    d['contact_name'] = row[8]
-    d['contact_email'] = row[9]
-    d['contact_number'] = row[10]
-    d['date_submitted'] = str(row[11])
-    d['date_approved'] = str(row[12])
-    d['date_posted'] = str(row[13])
-    d['date_expiry'] = str(row[14])
+    # d['uploader_id'] = row[1]
+    d['title'] = row[2]
+    d['status'] = row[3]
+    d['serialized_image_data'] = row[4]
+    d['description'] = row[5]
+    d['link'] = row[6]
+    d['category'] = row[7]
+    d['locations'] = row[8]
+    d['contact_name'] = row[9]
+    d['contact_email'] = row[10]
+    d['contact_number'] = row[11]
+    d['date_submitted'] = str(row[12])
+    d['date_approved'] = str(row[13])
+    d['date_posted'] = str(row[14])
+    d['date_expiry'] = str(row[15])
+
 
     return d
 
-def buildRowDictNonNull(row, privelage = 0, ignore_image = 0):
+def buildRowDictNonNull(row, privelage = -1, ignore_image = 0):
     d = buildRowDict(row)
-    if privelage == 0:
+    if privelage == -1:
         d['date_submitted'] = None
         d['date_approved'] = None
         d['date_posted'] = None

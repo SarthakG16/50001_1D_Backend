@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS poster;
 
 CREATE TABLE poster (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uploader_id TEXT,
   title TEXT,
   status TEXT,
 
