@@ -208,3 +208,16 @@ The following JSON will update the poster with id 2.
 Deletes the poster at the given id. E.g. `DELETE /posters/?id=2` deletes the poster with id 2.
 
 *This command is only available when logged in as an administrator.*
+
+## Miscellaneous
+
+### GET /current
+
+This function returns the current user id, and their privilege.
+
+```json
+{
+  "privelage": null,
+  "user_id": null
+}
+```

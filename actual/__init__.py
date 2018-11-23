@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify, session
 
 def create_app(test_config = None):
     app = Flask(__name__, instance_relative_config = True)
@@ -18,9 +18,12 @@ def create_app(test_config = None):
     except OSError:
         pass
 
-    @app.route('/hello')
-    def hello():
-        return 'Hello world!'
+    @app.route('/current')
+    def current():
+        d = {}
+        d['user_id'] = session.get('user_id')
+        d['privelage'] = session.get('privelage')
+        return jsonify(d)
 
     from . import db
     db.init_app(app)
