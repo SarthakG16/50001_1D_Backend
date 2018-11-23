@@ -209,11 +209,42 @@ Deletes the poster at the given id. E.g. `DELETE /posters/?id=2` deletes the pos
 
 *This command is only available when logged in as an administrator.*
 
-## Miscellaneous
+## Debugging Functions
 
-### GET /current
+>Commands here are not meant to be used in production, but are for testing purposes only.
+
+### GET /debug_current_user
 
 This function returns the current user id, and their privilege.
+
+```json
+{
+  "privilege": null,
+  "user_id": null
+}
+```
+
+### GET /debug_users
+
+This function returns a list of all users, and their privilege.
+
+```json
+[
+  {
+    "privilege": 1,
+    "username": "admin1"
+  },
+  {
+    "privilege": "user",
+    "username": "user1"
+  }
+]
+```
+
+### GET /posters/debug_all
+
+This function returns all posters, regardless of who is logged in.
+Can be used in conjunction with the `ignore_image` flag.
 
 ```json
 {

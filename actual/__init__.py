@@ -1,5 +1,6 @@
 import os
 from flask import Flask, jsonify, session
+from actual.db import get_db
 
 def create_app(test_config = None):
     app = Flask(__name__, instance_relative_config = True)
@@ -24,6 +25,21 @@ def create_app(test_config = None):
         d['user_id'] = session.get('user_id')
         d['privilege'] = session.get('privilege')
         return jsonify(d)
+
+    @app.route('/debug_users', methods = ['GET'])
+    def debug():
+        db = get_db()
+        info = db.execute('SELECT * FROM user').fetchall()
+        ls = []
+        for user in info:
+            d = {}
+            d['username'] = user[1]
+            d['privilege'] = user[3]
+            ls.append(d)
+
+        if len(ls) == 0: return 'No users.'
+
+        return jsonify(ls)
 
     from . import db
     db.init_app(app)

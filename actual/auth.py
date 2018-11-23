@@ -15,17 +15,22 @@ def register():
         json = request.get_json()
         # requested_privilege = request.get_json()['requested_privilege']
         db = get_db()
-        privilege = 0
         error = None
 
         if 'username' not in json or json['username'] == '': return send_error('Username is required.')
         if 'password' not in json or json['password'] == '': return send_error('Password is required.')
-        if 'privilege' in json :
-            if json['privilege'] == 'administrator': privilege = 1
-            else: return send_error('Unauthorized.')
+        if 'privilege' not in json or json['privilege'] == '': return send_error('Privilege is required.')
 
         username = json['username']
         password = json['password']
+        privilege = -1
+        if json['privilege'] == 'administrator':
+            privilege = 1
+        elif json['privilege'] == 'user':
+            privilege = 0
+        if privilege == -1:
+            return send_error('Invalid privilege.')
+
 
         if db.execute(
             'SELECT id FROM user WHERE username = ?', (username,)

@@ -161,6 +161,19 @@ def posters():
 
     return ""
 
+@bp.route('/debug_all', methods = ['GET'])
+def debug():
+    ignore_image = 0
+    if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
+        ignore_image = 1
+
+    db = get_db()
+    info = db.execute('SELECT * FROM poster').fetchall()
+    posters = [buildRowDictNonNull(i, 1, ignore_image) for i in info]
+
+    if len(posters) == 0: return 'No posters.'
+    return jsonify(posters)
+
 
 @bp.before_app_request
 def load_logged_in_user():
