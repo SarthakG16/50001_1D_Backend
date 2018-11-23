@@ -55,10 +55,12 @@ def login():
         error = None
 
         if 'username' not in json or json['username'] == '': return send_error('Username is required.')
-        if 'password' not in json or json['password'] == '': return send_error('Username is required.')
+        if 'password' not in json or json['password'] == '': return send_error('Password is required.')
         if 'requested_privilege' in json:
             if json['requested_privilege'] == 'administrator': privilege = 1
             elif json['requested_privilege'] == 'user': privilege = 0
+        else:
+            return send_error('Privilege is required.')
 
         if privilege == -1: return send_error('Invalid privilege requested.')
 
