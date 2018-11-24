@@ -9,16 +9,47 @@ from actual.db import get_db
 
 bp = Blueprint('posters', __name__, url_prefix='/posters')
 
+@bp.route('/status', methods=['GET', 'POST'])
+def status():
+    if request.method == 'GET':
+        user_id = session.get('user_id')
+        if not user_id: return send_error('Not logged in.')
+        user_privilege = session.get('user_privilege')
+        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
+        try:
+            db = get_db()
+            info = db.execute('SELECT * FROM poster').fetchall()
+            rows = [buildRowDictNonNull(i, 1, 1) for i in info]
+            d = {}
+            d['posted'] = len([r for r in rows if r['status'] == 'posted'])
+            d['pending'] = len([r for r in rows if r['status'] == 'pending'])
+            d['approved'] = len([r for r in rows if r['status'] == 'approved'])
+            d['expired'] = len([r for r in rows if r['status'] == 'expired'])
+            return jsonify(d)
+        except Exception as e:
+            print(e)
+            return send_error(str(e))
+
 @bp.route('/mine', methods=['GET', 'POST'])
 def my_posters():
     if request.method == 'GET':
+        requested_status = request.args.get('status')
         user_id = session.get('user_id')
+        user_privilege = session.get('user_privilege')
+        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
         if not user_id: return send_error('Not logged in.')
         ignore_image = 0
         if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
             ignore_image = 1
         try:
+
             db = get_db()
+
+            if requested_status:
+                info = db.execute('SELECT * FROM poster WHERE uploader_id = ? AND status = ?', (user_id, requested_status,)).fetchall()
+                if info is None: return send_error('No posters matching the requested status.')
+                return jsonify([buildRowDictNonNull(i, 1, ignore_image) for i in info])
+
             info = db.execute('SELECT * FROM poster WHERE uploader_id = ?', (user_id,)).fetchall()
             if info is None: return send_error('Requested id not found.')
             return jsonify([buildRowDictNonNull(i, 1, ignore_image) for i in info])

@@ -166,6 +166,18 @@ This command has a few optional parameters to refine the query performed on the 
 ### GET /posters/mine
 When logged in as a user (or administrator), this command returns the poster details of the posters uploaded by the current user.
 
+### GET /posters/status
+When logged in as an administrator, this command returns the number of each status of poster, for example:
+
+```json
+{
+    "approved": 5,
+    "expired": 3,
+    "pending": 8,
+    "posted": 4
+}
+```
+
 ### POST /posters/
 When an 'id' key is not given in the JSON request, a new poster is created, and information stored in that new poster. When creating a new poster, **the 'title' field is compulsory**.
 
