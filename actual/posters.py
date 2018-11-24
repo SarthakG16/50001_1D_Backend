@@ -74,14 +74,12 @@ def posters():
         else: info = db.execute('SELECT * FROM poster WHERE status="posted"').fetchall()
 
         ls = [buildRowDictNonNull(i, user_privilege, ignore_image) for i in info]
-        print(ls)
-        print(jsonify(ls))
         return jsonify(ls)
 
     if request.method == 'POST':
         user_privilege = session.get('user_privilege')
         user_id = session.get('user_id')
-        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
+        if not user_id or user_id == '': return send_error('Unauthorized. Login is required for upload.')
         json = request.get_json()
         db = get_db()
 
@@ -108,7 +106,6 @@ def posters():
                 return send_success()
 
             ls = []
-            print(json)
             for key in json:
                 if key.startswith('date') and json[key]:
                     if ' ' not in json[key]: return send_error('Invalid date format')
@@ -118,7 +115,6 @@ def posters():
 
                 value = '"{}"'.format(json[key]) if json[key] else 'NULL'
                 ls.append('{} = {}'.format(key, value))
-            print('command', 'UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = "' + str(title) + '"')
             try:
                 db.execute('UPDATE poster SET ' + ', '.join(ls) + ' WHERE title = "' + str(title) + '"')
             except sqlite3.OperationalError as e:
@@ -193,7 +189,6 @@ def send_success():
     return jsonify(status = 'success')
 
 def buildRowDict(row, force_uploader = 0):
-    print(row)
     d = {}
     d['id'] = row[0]
     if force_uploader == 1:
