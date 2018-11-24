@@ -178,6 +178,9 @@ When logged in as an administrator, this command returns the number of each stat
 }
 ```
 
+### GET /posters/my_status
+When logged in, returns the user specific version of the above command.
+
 ### POST /posters/
 When an 'id' key is not given in the JSON request, a new poster is created, and information stored in that new poster. When creating a new poster, **the 'title' field is compulsory**.
 
