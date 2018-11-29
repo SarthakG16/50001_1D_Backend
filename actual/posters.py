@@ -12,117 +12,82 @@ bp = Blueprint('posters', __name__, url_prefix='/posters')
 @bp.route('/status', methods=['GET', 'POST'])
 def status():
     if request.method == 'GET':
-        user_id = session.get('user_id')
-        if not user_id: return send_error('Not logged in.')
-        user_privilege = session.get('user_privilege')
-        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
-        try:
-            db = get_db()
-            info = db.execute('SELECT * FROM poster').fetchall()
-            rows = [buildRowDictNonNull(i, 1, 1) for i in info]
-            d = count_statuses(rows)
-            return jsonify(d)
-        except Exception as e:
-            print(e)
-            return send_error(str(e))
+        user_id, user_privilege, error = check_user_and_privilege(session, [1])
+        if error: return send_error(error)
+
+        rows, error = get_rows('SELECT * FROM poster', [], 1, 1)
+        if error: return send_error(error)
+
+        d = count_statuses(rows)
+        return jsonify(d)
+
+@bp.route('/my_status', methods=['GET'])
+def my_status():
+    if request.method == 'GET':
+        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+        if error: return send_error(error)
+
+        rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ?', (user_id,), 1, 1)
+        if error: return send_error(error)
+
+        d = count_statuses(rows)
+        return jsonify(d)
+
 
 @bp.route('/mine', methods=['GET'])
 def my_posters():
     if request.method == 'GET':
         requested_status = request.args.get('status')
-        user_id = session.get('user_id')
-        user_privilege = session.get('user_privilege')
-        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
-        if not user_id: return send_error('Not logged in.')
-        ignore_image = 0
-        if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
-            ignore_image = 1
-        try:
 
-            db = get_db()
+        user_id, user_privilege, error = check_user_and_privilege(session, [1])
+        if error: return send_error(error)
 
-            if requested_status:
-                info = db.execute('SELECT * FROM poster WHERE uploader_id = ? AND status = ?', (user_id, requested_status,)).fetchall()
-                if info is None: return send_error('No posters matching the requested status.')
-                return jsonify([buildRowDictNonNull(i, 1, ignore_image) for i in info])
+        ignore_image = check_ignore_image(request)
 
-            info = db.execute('SELECT * FROM poster WHERE uploader_id = ?', (user_id,)).fetchall()
-            if info is None: return send_error('Requested id not found.')
-            return jsonify([buildRowDictNonNull(i, 1, ignore_image) for i in info])
-        except Exception as e:
-            print(e)
-            return send_error(str(e))
+        if requested_status:
+            rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ? AND status = ?', (user_id, requested_status,), 1, ignore_image)
+        else:
+            rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ?', (user_id,), 1, ignore_image)
 
-@bp.route('/my_status', methods=['GET'])
-def my_status():
-    if request.method == 'GET':
-        user_id = session.get('user_id')
-        if not user_id: return send_error('Not logged in.')
+        if error: return send_error(error)
+        if rows is None: return send_error('No posters matching the requested status.')
+        return jsonify(rows)
 
-        try:
-            db = get_db()
-            info = db.execute('SELECT * FROM poster WHERE uploader_id = ?', (user_id,)).fetchall()
-            rows = [buildRowDictNonNull(i, 1, 1) for i in info]
-            d = count_statuses(rows)
-            return jsonify(d)
-        except Exception as e:
-            print(e)
-            return send_error(str(e))
 
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
 def posters():
-    if request.method == 'DELETE':
-        requested_id = request.args.get('id')
-        user_privilege = session.get('user_privilege')
-        if not user_privilege or user_privilege == 0: return send_error('Unauthorized.')
-        if requested_id == None: return send_error('Id not specified.')
-
-        db = get_db()
-        #info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
-        #if info is None: return send_error('Id not found.')
-
-        db.execute('DELETE FROM poster WHERE id = ?', (requested_id,))
-        db.commit()
-        return send_success()
-
     if request.method == 'GET':
+        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+        if error: return send_error(error)
+        ignore_image = check_ignore_image(request)
+
         requested_id = request.args.get('id')
         requested_status = request.args.get('status')
 
-        ignore_image = 0
-        if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
-            ignore_image = 1
-
-        user_privilege = 0
-        user_privilege = session.get('user_privilege')
-        db = get_db()
-
         if requested_id:
-            try:
-                info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
-                if info is None: return send_error('Requested id not found.')
-                return jsonify(buildRowDictNonNull(info, user_privilege, ignore_image))
-            except Exception as e:
-                print(e)
-                return send_error(str(e))
+            rows, error = get_rows('SELECT * FROM poster WHERE id = ?', (requested_id,), user_privilege, ignore_image)
+            if error: return send_error(error)
+            if rows is None: return send_error('Requested id not found.')
+            return jsonify(rows)
 
         if requested_status:
-            if user_privilege == 0: return jsonify([])
-            info = db.execute('SELECT * FROM poster WHERE status = ?', (requested_status,)).fetchall()
-            if info is None: return send_error('No posters matching the requested status.')
-            ls = [buildRowDictNonNull(i, user_privilege, ignore_image) for i in info]
-            return jsonify(ls)
+            rows, error = get_rows('SELECT * FROM poster WHERE status = ?', (requested_status,), user_privilege, ignore_image)
+            if error: return send_error(error)
+            if rows is None: return send_error('No posters matching the requested status.')
+            return jsonify(rows)
 
-        if user_privilege == 1: info = db.execute('SELECT * FROM poster').fetchall()
-        else: info = db.execute('SELECT * FROM poster WHERE status="posted"').fetchall()
+        if user_privilege == 1: command = 'SELECT * FROM poster'
+        else: command = 'SELECT * FROM poster WHERE status="posted"'
 
-        ls = [buildRowDictNonNull(i, user_privilege, ignore_image) for i in info]
-        return jsonify(ls)
+        rows, error = get_rows(command, [], user_privilege, ignore_image)
+        if error: return send_error(error)
+
+        return jsonify(rows)
 
     if request.method == 'POST':
-        user_privilege = session.get('user_privilege')
-        user_id = session.get('user_id')
-        if not user_id or user_id == '': return send_error('Unauthorized. Login is required for upload.')
+        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+        if error: return send_error(error)
+
         json = request.get_json()
         db = get_db()
 
@@ -133,20 +98,13 @@ def posters():
             title = json['title']
             json['uploader_id'] = user_id
 
-            if db.execute(
-                'SELECT id FROM poster WHERE title = ?', (title,)
-            ).fetchone() is not None:
-                return send_error('Poster already exists with given title.')
+            res, error = check_one('SELECT id FROM poster WHERE title = ?', (title,))
+            if error: return send_error(error)
+            if res is not None: return send_error('Poster already exists with given title.')
 
-            db.execute(
-                'INSERT INTO poster (title, status) VALUES (?, ?)',
-                (title, 'pending')
-            )
+            db.execute('INSERT INTO poster (title, status) VALUES (?, ?)', (title, 'pending'))
 
             json.pop('title')
-            if len(json) == 0:
-                db.commit()
-                return send_success()
 
             ls = []
             for key in json:
@@ -175,9 +133,9 @@ def posters():
             if id == '': return send_error('Missing Id in request.')
             json.pop('id')
 
-            info = db.execute('SELECT * FROM poster WHERE id = ?', (id,)).fetchone()
-            if info is None:
-                return send_error('Id not found.')
+            res, error = check_one('SELECT * FROM poster WHERE id = ?', (id,))
+            if error: return send_error(error)
+            if res is not None: return send_error('Poster already exists with given title.')
 
             ls = []
             for key in json:
@@ -196,9 +154,20 @@ def posters():
 
             return send_success()
 
+    if request.method == 'DELETE':
+        user_id, user_privilege, error = check_user_and_privilege(session, [1])
+        if error: return send_error(error)
 
+        requested_id = request.args.get('id')
+        if requested_id == None: return send_error('Id not specified.')
 
-    return ""
+        db = get_db()
+        info = db.execute('SELECT * FROM poster WHERE id = ?', (requested_id,)).fetchone()
+        if info is None: return send_error('Id not found.')
+
+        db.execute('DELETE FROM poster WHERE id = ?', (requested_id,))
+        db.commit()
+        return send_success()
 
 @bp.route('/debug_all', methods = ['GET'])
 def debug():
@@ -251,8 +220,28 @@ def buildRowDict(row, force_uploader = 0):
     d['date_posted'] = str(row[14])
     d['date_expiry'] = str(row[15])
 
-
     return d
+
+def get_rows(command, args, info, privilege = -1, ignore_image = 0, force_uploader = 0):
+    try:
+        db = get_db()
+        info = db.execute(command, args).fetchall()
+        rows = [buildRowDictNonNull(i, privilege, ignore_image, force_uploader) for i in info]
+        return [rows, None]
+
+    except Exception as e:
+        print(e)
+        return [None, e]
+
+def check_one(command, args):
+    try:
+        db = get_db()
+        info = db.execute(command, args).fetchone()
+        return [info, None]
+
+    except Exception as e:
+        print(e)
+        return [None, e]
 
 def buildRowDictNonNull(row, privilege = -1, ignore_image = 0, force_uploader = 0):
     d = buildRowDict(row, force_uploader)
@@ -272,3 +261,18 @@ def count_statuses(rows):
     d['approved'] = len([r for r in rows if r['status'] == 'approved'])
     d['expired'] = len([r for r in rows if r['status'] == 'expired'])
     return d
+
+def check_user_and_privilege(session, allowed_privileges):
+    user_id = session.get('user_id')
+    if not user_id: return [None, 'Not logged in.']
+
+    user_privilege = session.get('user_privilege')
+    if not user_privilege or user_privilege not in allowed_privileges: return [None, 'Unauthorized.']
+
+    return [user_id, user_privilege, None]
+
+def check_ignore_image(request):
+    ignore_image = 0
+    if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
+        ignore_image = 1
+    return ignore_image
