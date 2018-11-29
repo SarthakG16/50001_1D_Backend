@@ -23,7 +23,7 @@ def create_app(test_config = None):
     def current():
         d = {}
         d['user_id'] = session.get('user_id')
-        d['privilege'] = session.get('privilege')
+        d['privilege'] = session.get('user_privilege')
         return jsonify(d)
 
     @app.route('/debug_users', methods = ['GET'])
