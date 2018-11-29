@@ -57,7 +57,7 @@ def my_posters():
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
 def posters():
     if request.method == 'GET':
-        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+        user_id, user_privilege, error = check_user_and_privilege(session, [-1, 0, 1])
         if error: return send_error(error)
         ignore_image = check_ignore_image(request)
 
@@ -264,10 +264,12 @@ def count_statuses(rows):
 
 def check_user_and_privilege(session, allowed_privileges):
     user_id = session.get('user_id')
-    if not user_id: return [None, 'Not logged in.']
+    if not user_id: return [None, None, 'Not logged in.']
 
     user_privilege = session.get('user_privilege')
-    if not user_privilege or user_privilege not in allowed_privileges: return [None, 'Unauthorized.']
+    if -1 not in allowed_privileges:
+        if not user_privilege or user_privilege not in allowed_privileges:
+            return [None, None, 'Unauthorized.']
 
     return [user_id, user_privilege, None]
 
