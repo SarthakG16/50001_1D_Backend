@@ -57,7 +57,7 @@ def my_posters():
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
 def posters():
     if request.method == 'GET':
-        user_id, user_privilege, error = check_user_and_privilege(session, [-1, 0, 1])
+        user_id, user_privilege, error = check_user_and_privilege(session, [-1, 0, 1], ignore_id = True)
         if error: return send_error(error)
         ignore_image = check_ignore_image(request)
 
@@ -262,9 +262,10 @@ def count_statuses(rows):
     d['expired'] = len([r for r in rows if r['status'] == 'expired'])
     return d
 
-def check_user_and_privilege(session, allowed_privileges):
+def check_user_and_privilege(session, allowed_privileges, ignore_id = False):
     user_id = session.get('user_id')
-    if not user_id: return [None, None, 'Not logged in.']
+    if ignore_id == False:
+        if not user_id: return [None, None, 'Not logged in.']
 
     user_privilege = session.get('user_privilege')
     if -1 not in allowed_privileges:
