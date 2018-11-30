@@ -1,4 +1,5 @@
 import functools, sqlite3
+from termcolor import colored
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
@@ -39,7 +40,7 @@ def my_posters():
     if request.method == 'GET':
         requested_status = request.args.get('status')
 
-        user_id, user_privilege, error = check_user_and_privilege(session, [1])
+        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
         if error: return send_error(error)
 
         ignore_image = check_ignore_image(request)
@@ -195,6 +196,7 @@ def load_logged_in_user():
         ).fetchone()
 
 def send_error(text):
+    print(colored('Error encountered: {}'.format(text), 'red'))
     return jsonify(status = 'failure', error_message = text)
 
 def send_success():
@@ -263,13 +265,16 @@ def count_statuses(rows):
     return d
 
 def check_user_and_privilege(session, allowed_privileges, ignore_id = False):
+
     user_id = session.get('user_id')
+    user_privilege = session.get('user_privilege')
+
     if ignore_id == False:
         if not user_id: return [None, None, 'Not logged in.']
 
-    user_privilege = session.get('user_privilege')
-    if -1 not in allowed_privileges:
-        if not user_privilege or user_privilege not in allowed_privileges:
+    allowed = [str(i) for i in allowed_privileges]
+    if '-1' not in allowed:
+        if user_privilege == None or str(user_privilege) not in allowed:
             return [None, None, 'Unauthorized.']
 
     return [user_id, user_privilege, None]
