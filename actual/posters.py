@@ -262,6 +262,7 @@ def count_statuses(rows):
     d['pending'] = len([r for r in rows if r['status'] == 'pending'])
     d['approved'] = len([r for r in rows if r['status'] == 'approved'])
     d['expired'] = len([r for r in rows if r['status'] == 'expired'])
+    d['rejected'] = len([r for r in rows if r['status'] == 'rejected'])
     return d
 
 def check_user_and_privilege(session, allowed_privileges, ignore_id = False):
@@ -272,12 +273,20 @@ def check_user_and_privilege(session, allowed_privileges, ignore_id = False):
     if ignore_id == False:
         if not user_id: return [None, None, 'Not logged in.']
 
+    if check_privilege(session, allowed_privileges) == False:
+        return [None, None, 'Unauthorized.']
+
+    return [user_id, user_privilege, None]
+
+def check_privilege(session, allowed_privileges):
+
+    user_privilege = session.get('user_privilege')
+
     allowed = [str(i) for i in allowed_privileges]
     if '-1' not in allowed:
         if user_privilege == None or str(user_privilege) not in allowed:
-            return [None, None, 'Unauthorized.']
-
-    return [user_id, user_privilege, None]
+            return False
+    return True
 
 def check_ignore_image(request):
     ignore_image = 0
