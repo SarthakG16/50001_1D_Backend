@@ -65,8 +65,10 @@ def posters():
         requested_id = request.args.get('id')
         requested_status = request.args.get('status')
 
+        extra = ' WHERE status="posted"' if user_privilege < 1 else ''
+
         if requested_id:
-            rows, error = get_rows('SELECT * FROM poster WHERE id = ?', (requested_id,), privilege = user_privilege, ignore_image = ignore_image)
+            rows, error = get_rows('SELECT * FROM poster WHERE id = ?' + extra, (requested_id,), privilege = user_privilege, ignore_image = ignore_image)
             if error: return send_error(error)
             if rows is None: return send_error('Requested id not found.')
             return jsonify(rows)
@@ -77,10 +79,7 @@ def posters():
             if rows is None: return send_error('No posters matching the requested status.')
             return jsonify(rows)
 
-        if user_privilege == 1: command = 'SELECT * FROM poster'
-        else: command = 'SELECT * FROM poster WHERE status="posted"'
-
-        rows, error = get_rows(command, [], privilege = user_privilege, ignore_image = ignore_image)
+        rows, error = get_rows('SELECT * FROM poster' + extra, [], privilege = user_privilege, ignore_image = ignore_image)
         if error: return send_error(error)
 
         return jsonify(rows)
@@ -269,6 +268,7 @@ def check_user_and_privilege(session, allowed_privileges, ignore_id = False):
 
     user_id = session.get('user_id')
     user_privilege = session.get('user_privilege')
+    if user_privilege == None: user_privilege = -1
 
     if ignore_id == False:
         if not user_id: return [None, None, 'Not logged in.']
@@ -281,6 +281,7 @@ def check_user_and_privilege(session, allowed_privileges, ignore_id = False):
 def check_privilege(session, allowed_privileges):
 
     user_privilege = session.get('user_privilege')
+    if user_privilege == None: user_privilege = -1
 
     allowed = [str(i) for i in allowed_privileges]
     if '-1' not in allowed:
