@@ -66,13 +66,13 @@ def posters():
         requested_status = request.args.get('status')
 
         if requested_id:
-            rows, error = get_rows('SELECT * FROM poster WHERE id = ?', (requested_id,), user_privilege, ignore_image)
+            rows, error = get_rows('SELECT * FROM poster WHERE id = ?', (requested_id,), privilege = user_privilege, ignore_image = ignore_image)
             if error: return send_error(error)
             if rows is None: return send_error('Requested id not found.')
             return jsonify(rows)
 
         if requested_status:
-            rows, error = get_rows('SELECT * FROM poster WHERE status = ?', (requested_status,), user_privilege, ignore_image)
+            rows, error = get_rows('SELECT * FROM poster WHERE status = ?', (requested_status,), privilege = user_privilege, ignore_image = ignore_image)
             if error: return send_error(error)
             if rows is None: return send_error('No posters matching the requested status.')
             return jsonify(rows)
@@ -80,7 +80,7 @@ def posters():
         if user_privilege == 1: command = 'SELECT * FROM poster'
         else: command = 'SELECT * FROM poster WHERE status="posted"'
 
-        rows, error = get_rows(command, [], user_privilege, ignore_image)
+        rows, error = get_rows(command, [], privilege = user_privilege, ignore_image = ignore_image)
         if error: return send_error(error)
 
         return jsonify(rows)
@@ -224,7 +224,7 @@ def buildRowDict(row, force_uploader = 0):
 
     return d
 
-def get_rows(command, args, info, privilege = -1, ignore_image = 0, force_uploader = 0):
+def get_rows(command, args, privilege = -1, ignore_image = 0, force_uploader = 0):
     try:
         db = get_db()
         info = db.execute(command, args).fetchall()
