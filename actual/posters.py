@@ -10,77 +10,86 @@ from actual.db import get_db
 
 bp = Blueprint('posters', __name__, url_prefix='/posters')
 
-@bp.route('/status', methods=['GET', 'POST'])
+@bp.route('/status', methods=['GET'])
 def status():
-    if request.method == 'GET':
-        user_id, user_privilege, error = check_user_and_privilege(session, [1])
-        if error: return send_error(error)
+    '''
+    Returns a summary of the status of every poster in the db.
+    '''
+    user_id, user_privilege, error = check_user_and_privilege(session, [1])
+    if error: return send_error(error)
 
-        rows, error = get_rows('SELECT * FROM poster', [], 1, 1)
-        if error: return send_error(error)
+    rows, error = get_rows('SELECT * FROM poster', [], 1, 1)
+    if error: return send_error(error)
 
-        d = count_statuses(rows)
-        return jsonify(d)
+    d = count_statuses(rows)
+    return jsonify(d)
 
 @bp.route('/my_status', methods=['GET'])
 def my_status():
-    if request.method == 'GET':
-        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
-        if error: return send_error(error)
+    '''
+    Returns a summary of the status of only posters uploaded by the
+    current user.
+    '''
+    user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+    if error: return send_error(error)
 
-        rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ?', (user_id,), 1, 1)
-        if error: return send_error(error)
+    rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ?', (user_id,), 1, 1)
+    if error: return send_error(error)
 
-        d = count_statuses(rows)
-        return jsonify(d)
+    d = count_statuses(rows)
+    return jsonify(d)
 
 
 @bp.route('/mine', methods=['GET'])
 def my_posters():
-    if request.method == 'GET':
-        requested_status = request.args.get('status')
+    '''
+    Returns a list of posters uploaded by the current user.
+    '''
+    requested_status = request.args.get('status')
 
-        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
-        if error: return send_error(error)
+    user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+    if error: return send_error(error)
 
-        ignore_image = check_ignore_image(request)
+    ignore_image = check_ignore_image(request)
 
-        if requested_status:
-            rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ? AND status = ?', (user_id, requested_status,), 1, ignore_image)
-        else:
-            rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ?', (user_id,), 1, ignore_image)
+    if requested_status:
+        rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ? AND status = ?', (user_id, requested_status,), 1, ignore_image)
+    else:
+        rows, error = get_rows('SELECT * FROM poster WHERE uploader_id = ?', (user_id,), 1, ignore_image)
 
-        if error: return send_error(error)
-        if rows is None: return send_error('No posters matching the requested status.')
-        return jsonify(rows)
+    if error: return send_error(error)
+    if rows is None: return send_error('No posters matching the requested status.')
+    return jsonify(rows)
 
 @bp.route('/cancel', methods=['POST'])
 def cancel():
-    if request.method == 'POST':
+    '''
+    Allows a user to cancel posters uploaded by themselves if they have not
+    been displayed, or approved.
+    '''
+    user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+    if error: return send_error(error)
 
-        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
-        if error: return send_error(error)
+    json = request.get_json()
+    if 'id' not in json: return send_error('id not provided.')
 
-        json = request.get_json()
-        if 'id' not in json: return send_error('id not provided.')
+    # TODO: shorten
+    info, error = check_one('SELECT * FROM poster WHERE id = ?', (json['id'],))
+    if error: return send_error(error)
+    if info is None: return send_error('No poster the given id.')
 
-        # TODO: shorten
-        info, error = check_one('SELECT * FROM poster WHERE id = ?', (json['id'],))
-        if error: return send_error(error)
-        if info is None: return send_error('No poster the given id.')
-
-        info, error = check_one('SELECT * FROM poster WHERE uploader_id = ? AND id = ?', (user_id, json['id'],))
-        if error: return send_error(error)
-        if info is None: return send_error('Cannot delete poster not uploaded by the current user.')
+    info, error = check_one('SELECT * FROM poster WHERE uploader_id = ? AND id = ?', (user_id, json['id'],))
+    if error: return send_error(error)
+    if info is None: return send_error('Cannot delete poster not uploaded by the current user.')
 
     info, error = check_one('SELECT * FROM poster WHERE uploader_id = ? AND id = ? AND status IN ("pending", "approved", "rejected", "expired")', (user_id, json['id'],))
     if error: return send_error(error)
     if info is None: return send_error('Poster not pending / approved.')
 
-        db = get_db()
-        db.execute('DELETE FROM poster WHERE uploader_id = ? AND id = ?', (user_id, json['id'],))
-        db.commit()
-        return send_success()
+    db = get_db()
+    db.execute('DELETE FROM poster WHERE uploader_id = ? AND id = ?', (user_id, json['id'],))
+    db.commit()
+    return send_success()
 
 
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
@@ -121,6 +130,8 @@ def posters():
         db = get_db()
 
         if 'id' not in json:
+            # New Posters.
+
             if 'title' not in json or json['title'] == "":
                 return send_error('Missing title. New posters must have a title.')
 
@@ -158,6 +169,8 @@ def posters():
             return send_success()
 
         else:
+            # Editing existing posters.
+
             id = json['id']
             if id == '': return send_error('Missing Id in request.')
             json.pop('id')
@@ -308,18 +321,12 @@ def check_user_and_privilege(session, allowed_privileges, ignore_id = False):
     return [user_id, user_privilege, None]
 
 def check_privilege(session, allowed_privileges):
-
     user_privilege = session.get('user_privilege')
-    if user_privilege == None: user_privilege = -1
-
     allowed = [str(i) for i in allowed_privileges]
-    if '-1' not in allowed:
-        if user_privilege == None or str(user_privilege) not in allowed:
-            return False
-    return True
+    if user_privilege == None and '-1' in allowed: return True
+    if str(user_privilege) in allowed: return True
+    return False
 
 def check_ignore_image(request):
-    ignore_image = 0
-    if request.args.get('ignore_image') and request.args.get('ignore_image') == '1':
-        ignore_image = 1
-    return ignore_image
+    ignore = request.args.get('ignore_image')
+    return 1 if ignore == '1' else 0
