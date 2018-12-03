@@ -136,7 +136,7 @@ def posters():
 
             res, error = check_one('SELECT * FROM poster WHERE id = ?', (id,))
             if error: return send_error(error)
-            if res is not None: return send_error('Poster already exists with given title.')
+            if res is None: return send_error('Requested id not found.')
 
             ls = []
             for key in json:
