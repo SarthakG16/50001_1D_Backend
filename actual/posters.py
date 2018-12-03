@@ -73,9 +73,9 @@ def cancel():
         if error: return send_error(error)
         if info is None: return send_error('Cannot delete poster not uploaded by the current user.')
 
-        info, error = check_one('SELECT * FROM poster WHERE uploader_id = ? AND id = ? AND status IN ("pending", "approved")', (user_id, json['id'],))
-        if error: return send_error(error)
-        if info is None: return send_error('Poster not pending / approved.')
+    info, error = check_one('SELECT * FROM poster WHERE uploader_id = ? AND id = ? AND status IN ("pending", "approved", "rejected", "expired")', (user_id, json['id'],))
+    if error: return send_error(error)
+    if info is None: return send_error('Poster not pending / approved.')
 
         db = get_db()
         db.execute('DELETE FROM poster WHERE uploader_id = ? AND id = ?', (user_id, json['id'],))
