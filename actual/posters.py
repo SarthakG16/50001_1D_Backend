@@ -1,5 +1,6 @@
 import functools, sqlite3
 from termcolor import colored
+from datetime import datetime
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
@@ -95,6 +96,9 @@ def cancel():
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
 def posters():
     if request.method == 'GET':
+        approveAsNeeded()
+        expireAsNeeded()
+
         user_id, user_privilege, error = check_user_and_privilege(session, [-1, 0, 1], ignore_id = True)
         if error: return send_error(error)
         ignore_image = check_ignore_image(request)
@@ -264,6 +268,34 @@ def buildRowDict(row, force_uploader = 0):
     d['date_expiry'] = str(row[15])
 
     return d
+
+def approveAsNeeded():
+    db = get_db()
+    info = db.execute('Select * from poster WHERE status = "approved"').fetchall()
+    if info is None or len(info) == 0:
+        return
+    for i in info:
+        if i[14] == None: continue
+        to_post = i[14]
+        now = datetime.now()
+        if now > to_post:
+            db.execute('UPDATE poster set status="posted" WHERE id = {}'.format(i[0]))
+            print('Posted {}'.format(i[0]))
+    db.commit()
+
+def expireAsNeeded():
+    db = get_db()
+    info = db.execute('Select * from poster WHERE status = "posted"').fetchall()
+    if info is None or len(info) == 0:
+        return
+    for i in info:
+        if i[15] == None: continue
+        to_expire = i[15]
+        now = datetime.now()
+        if now > to_expire:
+            db.execute('UPDATE poster set status="expired" WHERE id = {}'.format(i[0]))
+            print('Expired {}'.format(i[0]))
+    db.commit()
 
 def get_rows(command, args, privilege = -1, ignore_image = 0, force_uploader = 0):
     try:
