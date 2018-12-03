@@ -54,6 +54,34 @@ def my_posters():
         if rows is None: return send_error('No posters matching the requested status.')
         return jsonify(rows)
 
+@bp.route('/cancel', methods=['POST'])
+def cancel():
+    if request.method == 'POST':
+
+        user_id, user_privilege, error = check_user_and_privilege(session, [0, 1])
+        if error: return send_error(error)
+
+        json = request.get_json()
+        if 'id' not in json: return send_error('id not provided.')
+
+        # TODO: shorten
+        info, error = check_one('SELECT * FROM poster WHERE id = ?', (json['id'],))
+        if error: return send_error(error)
+        if info is None: return send_error('No poster the given id.')
+
+        info, error = check_one('SELECT * FROM poster WHERE uploader_id = ? AND id = ?', (user_id, json['id'],))
+        if error: return send_error(error)
+        if info is None: return send_error('Cannot delete poster not uploaded by the current user.')
+
+        info, error = check_one('SELECT * FROM poster WHERE uploader_id = ? AND id = ? AND status IN ("pending", "approved")', (user_id, json['id'],))
+        if error: return send_error(error)
+        if info is None: return send_error('Poster not pending / approved.')
+
+        db = get_db()
+        db.execute('DELETE FROM poster WHERE uploader_id = ? AND id = ?', (user_id, json['id'],))
+        db.commit()
+        return send_success()
+
 
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
 def posters():
