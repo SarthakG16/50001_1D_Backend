@@ -74,6 +74,7 @@ def posters():
             return jsonify(rows)
 
         if requested_status:
+            if user_privilege < 1: return send_error('Non-admin cannot request for a status.')
             rows, error = get_rows('SELECT * FROM poster WHERE status = ?', (requested_status,), privilege = user_privilege, ignore_image = ignore_image)
             if error: return send_error(error)
             if rows is None: return send_error('No posters matching the requested status.')
