@@ -92,6 +92,41 @@ def cancel():
     db.commit()
     return send_success()
 
+@bp.route('/filter', methods=['GET'])
+def filter():
+    approveAsNeeded()
+    expireAsNeeded()
+
+    user_id, user_privilege, error = check_user_and_privilege(session, [-1, 0, 1], ignore_id = True)
+    if error: return send_error(error)
+    ignore_image = check_ignore_image(request)
+
+    args = request.args.to_dict()
+
+    print('args', args)
+    for key in args.keys():
+        args[key] = args[key].split(',')
+    print('args', args)
+
+    s = 'Where '
+    if user_privilege == 0: s = 'WHERE (status = "posted" OR uploader_id = "{}") '.format(user_id)
+    if user_privilege == -1: s = 'WHERE (status = "posted") '
+
+    for key in args.keys():
+        s+= ' AND '
+
+        val = args[key]
+        if len(val) == 1:
+            s += '{} = "{}"'.format(key, val[0])
+        else:
+            s += '{} in ({})'.format(key, ','.join('"{}"'.format(i) for i in val))
+
+    command = 'SELECT * FROM poster ' + s
+
+    rows = get_rows(command, [], user_privilege, ignore_image)
+
+    return jsonify(rows)
+
 
 @bp.route('/', methods=['GET', 'POST', 'DELETE'])
 def posters():
