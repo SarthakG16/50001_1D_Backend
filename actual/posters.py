@@ -113,6 +113,8 @@ def filter():
     if user_privilege == -1: s = 'WHERE (status = "posted") '
 
     for key in args.keys():
+        if key == 'ignore_image': continue
+        
         s+= ' AND '
 
         val = args[key]
