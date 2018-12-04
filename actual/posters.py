@@ -100,6 +100,7 @@ def filter():
     user_id, user_privilege, error = check_user_and_privilege(session, [-1, 0, 1], ignore_id = True)
     if error: return send_error(error)
     ignore_image = check_ignore_image(request)
+    mine = check_mine(request)
 
     args = request.args.to_dict()
 
@@ -108,20 +109,28 @@ def filter():
         args[key] = args[key].split(',')
     print('args', args)
 
-    s = 'Where '
+    s = ''
     if user_privilege == 0: s = 'WHERE (status = "posted" OR uploader_id = "{}") '.format(user_id)
     if user_privilege == -1: s = 'WHERE (status = "posted") '
 
     for key in args.keys():
-        if key == 'ignore_image': continue
-        
-        s+= ' AND '
+        if key == 'ignore_image' or key == 'mine': continue
+        if s == '':
+            s += 'WHERE '
+        else:
+            s+= ' AND '
 
         val = args[key]
         if len(val) == 1:
             s += '{} = "{}"'.format(key, val[0])
         else:
             s += '{} in ({})'.format(key, ','.join('"{}"'.format(i) for i in val))
+
+    if mine:
+        if s == '':
+            s += 'WHERE uploader_id = "{}"'.format(user_id)
+        else:
+            s+= ' AND uploader_id = "{}"'.format(user_id)
 
     command = 'SELECT * FROM poster ' + s
 
@@ -399,3 +408,7 @@ def check_privilege(session, allowed_privileges):
 def check_ignore_image(request):
     ignore = request.args.get('ignore_image')
     return 1 if ignore == '1' else 0
+
+def check_mine(request):
+    mine = request.args.get('mine')
+    return 1 if mine == '1' else 0
