@@ -94,6 +94,14 @@ def cancel():
 
 @bp.route('/filter', methods=['GET'])
 def filter():
+    '''
+    Returns posters that are based on the parameters specified.
+    Multiple conditions can be set, as well as multple values
+    for each paramter (seperated by ',').
+    For example:
+    - /filter?mine=1&status=posted,approved
+    - /filter?status=pending&contact_name=Andre
+    '''
     approveAsNeeded()
     expireAsNeeded()
 
@@ -104,10 +112,8 @@ def filter():
 
     args = request.args.to_dict()
 
-    print('args', args)
     for key in args.keys():
         args[key] = args[key].split(',')
-    print('args', args)
 
     s = ''
     if user_privilege == 0: s = 'WHERE (status = "posted" OR uploader_id = "{}") '.format(user_id)
@@ -134,7 +140,8 @@ def filter():
 
     command = 'SELECT * FROM poster ' + s
 
-    rows = get_rows(command, [], user_privilege, ignore_image)
+    rows, error = get_rows(command, [], user_privilege, ignore_image)
+    if error: return send_error(error)
 
     return jsonify(rows)
 
