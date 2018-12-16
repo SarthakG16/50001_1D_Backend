@@ -26,7 +26,7 @@ const request = require('request');
 const request = require('request');
 const fs = require('fs');
 
-request("http://fishy.asuscomm.com:5000/posters/", { json: true }, (err, res, body) => {
+request("htts://SERVERADDRESS/posters/", { json: true }, (err, res, body) => {
   if (err) { return console.log(err); }
 
   for (let i = 0; i < body.length; i++) {
@@ -49,9 +49,9 @@ request("http://fishy.asuscomm.com:5000/posters/", { json: true }, (err, res, bo
 
 # Using the API (General)
 
-Currently, the server is residing in `http://fishy.asuscomm.com:5000`, so for the commands below, add it to the end of this URL.
+For the commands below, add the string to the end of the server address.
 
-For example, for retrieving all poster data, use `http://fishy.asuscomm.com:5000/posters/`.
+For example, for retrieving all poster data, use `SERVERADDRESS/posters/`.
 
 ## Registering, Logging In, Logging Out
 
@@ -99,9 +99,12 @@ Example output JSON:
 
 ## Posters
 
-### GET /posters/
+### GET /posters/ (DEPRECATED)
+Please use the /posters/filter endpoint as described below.
 
-When logged in as a user or not logged in, a call to GET /posters/ will return all posters **with the 'posted' status**.
+### GET /posters/filter
+
+When logged in as a user (non-administrative), a call to GET /posters/filter will return all posters **with the 'posted' status** or uploaded by the user.
 ```json
 [
   {
@@ -121,7 +124,7 @@ When logged in as a user or not logged in, a call to GET /posters/ will return a
 ]
 ```
 
-When logged in as an administrator, the GET /posters/ function returns a JSON list with **every** poster.
+When logged in as an administrator, the GET /posters/filter function returns a JSON list with **every** poster.
 ```json
 [
   {
@@ -154,17 +157,20 @@ When logged in as an administrator, the GET /posters/ function returns a JSON li
   }
 ]
 ```
+
+When not logged-in, the command only returns posters **with the 'posted' status**.
+
 This command has a few optional parameters to refine the query performed on the server.
 
 - `/posters/?id=2` A poster of a specific id can be requested using this parameter.
 
 
-- `/posters/?status=pending` Posters with a specific status can be requested using this parameter.
+- `/posters/?status=pending` Posters with a specific status can be requested using this parameter. This given statuses can be stacked.
 
 - `/posters/?ignore_image=1` - Since the serialized image data can be quite large, this parameter returns results without the image data when set to 1.
 
-### GET /posters/mine
-When logged in as a user (or administrator), this command returns the poster details of the posters uploaded by the current user.
+- `/posters/?mine=1` - This flag indicates to return only posters that were uploaded by the current user.
+
 
 ### GET /posters/status
 When logged in as an administrator, this command returns the number of each status of poster, for example:
